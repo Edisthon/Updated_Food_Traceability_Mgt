@@ -18,5 +18,6 @@ public interface ProductStatusLogInterface extends Remote{
     public String deleteProductStatusLog(ProductStatusLog products) throws RemoteException;
     public List<ProductStatusLog> retreiveAll() throws RemoteException;
     public ProductStatusLog retrieveById(ProductStatusLog product) throws RemoteException;
+    List<ProductStatusLog> getLogsByProductId(int productId) throws RemoteException;
     
 }

@@ -3,10 +3,15 @@ package view;
 
 import util2.RmiClientUtil;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Color;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.Font; // For title if needed
-import java.awt.Color; // For title if needed
 import model.Product;
 import model.User;
 import service.ProductInterface;
@@ -30,15 +35,18 @@ public class RegisterProductForm extends javax.swing.JFrame {
             // btnRegister.setEnabled(false); 
         }
         
-        allowOnlyLettersProductname(txtName);
-        allowOnlyLettersLoc(txtOrigin); 
-        disallowSpaces(txtName);
-        disallowSpaces(txtOrigin);
+        allowOnlyLettersProductname(txtName); // Allows spaces
+        allowOnlyLettersLoc(txtOrigin);     // Allows spaces
+        // txtName and txtOrigin can have spaces.
+        // txtQrCode should ideally not have spaces for robustness, applying strict disallowSpaces.
         disallowSpaces(txtQrCode); 
         
-        // Tooltips
+        // Enhanced Tooltips
+        txtName.setToolTipText("Enter the full name of the product (e.g., Organic Apples Batch #123).");
+        txtOrigin.setToolTipText("Enter the origin or current location of the product (e.g., Farm XYZ, USA or Warehouse B).");
+        txtQrCode.setToolTipText("Enter the data to be encoded in the QR code for this product. This should be unique and without spaces.");
         btnRegister.setToolTipText("Click to register this new product.");
-        btnBack.setToolTipText("Return to the previous screen.");
+        btnBack.setToolTipText("Return to the Admin Dashboard.");
 
         // Set default button
         JRootPane rootPane = SwingUtilities.getRootPane(btnRegister); 
@@ -70,21 +78,15 @@ public class RegisterProductForm extends javax.swing.JFrame {
         });
     }
     
-    private void disallowSpaces(JTextField textField) { // Potentially review if spaces are truly disallowed or just leading/trailing
+    // Simplified to strictly disallow any space for fields where it's applied (e.g., QR Code)
+    private void disallowSpaces(JTextField textField) {
         textField.addKeyListener(new KeyAdapter() {
             public void keyTyped(KeyEvent evt) {
                 char c = evt.getKeyChar();
-                if (Character.isWhitespace(c) && textField.getText().trim().isEmpty() && c == ' ') { // Disallow leading spaces
-                     evt.consume();
-                     JOptionPane.showMessageDialog(RegisterProductForm.this, "Leading spaces are not allowed.", "Input Restriction", JOptionPane.WARNING_MESSAGE);
-                } else if (c == ' ' && textField.getText().endsWith(" ")) { // Disallow multiple spaces
-                     evt.consume();
+                if (Character.isWhitespace(c)) {
+                    evt.consume();
+                    JOptionPane.showMessageDialog(RegisterProductForm.this, "Spaces are not allowed in this field.", "Input Restriction", JOptionPane.WARNING_MESSAGE);
                 }
-                // Original disallow all spaces:
-                // if (Character.isWhitespace(c)) { 
-                //     evt.consume();
-                //     JOptionPane.showMessageDialog(RegisterProductForm.this, "No spaces allowed in this field.", "Input Restriction", JOptionPane.WARNING_MESSAGE);
-                // }
             }
         });
     }
@@ -94,127 +96,154 @@ public class RegisterProductForm extends javax.swing.JFrame {
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
-        jLabel1 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
+        jLabel1 = new javax.swing.JLabel(); // Title
+        jLabel2 = new javax.swing.JLabel(); // Name Label
         txtName = new javax.swing.JTextField();
-        jLabel3 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel(); // Origin Label
         txtOrigin = new javax.swing.JTextField();
-        jLabel4 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel(); // QR Code Label
         txtQrCode = new javax.swing.JTextField();
         btnRegister = new javax.swing.JButton();
         btnBack = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        setTitle("Register Product");
+        // Title is set in constructor
 
         jPanel1.setBackground(new java.awt.Color(102, 102, 102));
+        jPanel1.setBorder(new EmptyBorder(20, 20, 20, 20)); // Padding
+        jPanel1.setLayout(new GridBagLayout()); // GridBagLayout
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5); // Default insets
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        jLabel1.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        // Title Label
+        jLabel1.setFont(new Font("Tahoma", Font.BOLD, 18));
         jLabel1.setForeground(new java.awt.Color(255, 255, 255));
         jLabel1.setText("Register Product");
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(5, 5, 20, 5); // Bottom margin for title
+        jPanel1.add(jLabel1, gbc);
 
+        gbc.gridwidth = 1; // Reset gridwidth
+        gbc.anchor = GridBagConstraints.WEST;
+
+        Font labelFont = new Font("Tahoma", Font.PLAIN, 13);
+        Font textFont = new Font("Tahoma", Font.PLAIN, 13);
+        Dimension textFieldSize = new Dimension(250, 28); // Adjusted text field size
+        Dimension buttonSize = new Dimension(120, 35);
+
+        // Product Name
+        jLabel2.setFont(labelFont);
         jLabel2.setForeground(new java.awt.Color(255, 255, 255));
         jLabel2.setText("Product Name:");
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        jPanel1.add(jLabel2, gbc);
 
+        txtName.setFont(textFont);
+        txtName.setPreferredSize(textFieldSize);
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        jPanel1.add(txtName, gbc);
+
+        // Origin/Location
+        jLabel3.setFont(labelFont);
         jLabel3.setForeground(new java.awt.Color(255, 255, 255));
         jLabel3.setText("Origin/Location:");
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        jPanel1.add(jLabel3, gbc);
 
+        txtOrigin.setFont(textFont);
+        txtOrigin.setPreferredSize(textFieldSize);
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        jPanel1.add(txtOrigin, gbc);
+
+        // QR Code Data
+        jLabel4.setFont(labelFont);
         jLabel4.setForeground(new java.awt.Color(255, 255, 255));
         jLabel4.setText("QR Code Data:");
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        jPanel1.add(jLabel4, gbc);
 
-        btnRegister.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        txtQrCode.setFont(textFont);
+        txtQrCode.setPreferredSize(textFieldSize);
+        gbc.gridx = 1;
+        gbc.gridy = 3;
+        jPanel1.add(txtQrCode, gbc);
+
+        // Buttons Panel
+        JPanel buttonPanel = new JPanel(new GridBagLayout());
+        buttonPanel.setBackground(new java.awt.Color(102, 102, 102));
+        GridBagConstraints btnGbc = new GridBagConstraints();
+        btnGbc.insets = new Insets(5,5,5,5);
+
+        btnRegister.setFont(new Font("Tahoma", Font.BOLD, 12));
         btnRegister.setText("Register");
+        btnRegister.setPreferredSize(buttonSize);
         btnRegister.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnRegisterActionPerformed(evt);
             }
         });
+        btnGbc.gridx = 0;
+        btnGbc.gridy = 0;
+        buttonPanel.add(btnRegister, btnGbc);
 
-        btnBack.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+        btnBack.setFont(new Font("Tahoma", Font.BOLD, 12));
         btnBack.setText("Back");
+        btnBack.setPreferredSize(buttonSize);
         btnBack.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnBackActionPerformed(evt);
             }
         });
+        btnGbc.gridx = 1;
+        btnGbc.gridy = 0;
+        buttonPanel.add(btnBack, btnGbc);
 
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(150, 150, 150)
-                        .addComponent(jLabel1))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(40, 40, 40)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel2)
-                            .addComponent(jLabel3)
-                            .addComponent(jLabel4))
-                        .addGap(20, 20, 20)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(txtName, javax.swing.GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE)
-                            .addComponent(txtOrigin)
-                            .addComponent(txtQrCode)))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(70, 70, 70)
-                        .addComponent(btnRegister)
-                        .addGap(80, 80, 80)
-                        .addComponent(btnBack)))
-                .addContainerGap(40, Short.MAX_VALUE))
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(20, 20, 20)
-                .addComponent(jLabel1)
-                .addGap(30, 30, 30)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel2)
-                    .addComponent(txtName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(25, 25, 25)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel3)
-                    .addComponent(txtOrigin, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(25, 25, 25)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel4)
-                    .addComponent(txtQrCode, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 50, Short.MAX_VALUE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnRegister)
-                    .addComponent(btnBack))
-                .addGap(40, 40, 40))
-        );
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(20, 5, 5, 5);
+        jPanel1.add(buttonPanel, gbc);
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
+        getContentPane().removeAll();
+        getContentPane().setLayout(new java.awt.BorderLayout());
+        getContentPane().add(jPanel1, java.awt.BorderLayout.CENTER);
 
         pack();
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnRegisterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegisterActionPerformed
-String productName = txtName.getText().trim();
-String origin = txtOrigin.getText().trim();
-String qrCode = txtQrCode.getText().trim();
+        String productName = txtName.getText().trim();
+        String origin = txtOrigin.getText().trim();
+        String qrCode = txtQrCode.getText().trim();
 
-if (productName.isEmpty() || origin.isEmpty() || qrCode.isEmpty()) {
-    JOptionPane.showMessageDialog(this, "Product Name, Origin/Location, and QR Code Data are required.", "Input Required", JOptionPane.WARNING_MESSAGE);
-    return;
-}
+        if (productName.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Product Name is required.", "Input Required", JOptionPane.WARNING_MESSAGE);
+            txtName.requestFocus();
+            return;
+        }
+        if (origin.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Origin/Location is required.", "Input Required", JOptionPane.WARNING_MESSAGE);
+            txtOrigin.requestFocus();
+            return;
+        }
+        if (qrCode.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "QR Code Data is required.", "Input Required", JOptionPane.WARNING_MESSAGE);
+            txtQrCode.requestFocus();
+            return;
+        }
 
-if (currentUser == null) {
+        if (currentUser == null) {
     JOptionPane.showMessageDialog(this, "No user logged in. Cannot register product.", "User Session Error", JOptionPane.ERROR_MESSAGE);
     return;
 }
