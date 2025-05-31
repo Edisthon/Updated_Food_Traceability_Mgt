@@ -36,16 +36,7 @@ public class UserListForm extends JFrame {
     public UserListForm(User adminUser) {
         this.currentUser = adminUser;
 
-        if (currentUser == null || !"admin".equalsIgnoreCase(currentUser.getRole())) {
-            JOptionPane.showMessageDialog(null, "Access Denied: Admin role required to manage users.",
-                                          "Access Denied", JOptionPane.ERROR_MESSAGE);
-            // Dispose the frame if access is denied.
-            // Ensure this is called after the constructor finishes or use SwingUtilities.invokeLater
-            SwingUtilities.invokeLater(() -> dispose());
-            // To prevent further initialization if access is denied, we can return early.
-            // However, the frame is already being constructed. A better pattern might be a static factory method.
-            // For now, we let initComponents run but the form will be disposed quickly.
-        }
+        // Removed admin role check block
 
         try {
             userService = RmiClientUtil.getUserService();
@@ -62,11 +53,12 @@ public class UserListForm extends JFrame {
         setMinimumSize(new Dimension(800, 500));
         setLocationRelativeTo(null);
 
-        if (userService != null && (currentUser != null && "admin".equalsIgnoreCase(currentUser.getRole()))) {
+        if (userService != null && currentUser != null) { // Load users if service and user are available, regardless of role
             loadUsers();
+            // All buttons remain enabled by default if service is available
         } else {
-            // Disable components if service failed or user is not admin
-            if (btnAddUser != null) btnAddUser.setEnabled(false);
+            // Disable components if service failed or user is somehow null (though constructor expects a user)
+            if (btnAddUser != null) btnAddUser.setEnabled(false); // Check for null in case initComponents hasn't run
             if (btnEditUser != null) btnEditUser.setEnabled(false);
             if (btnDeleteUser != null) btnDeleteUser.setEnabled(false);
             if (btnSearchUser != null) btnSearchUser.setEnabled(false);

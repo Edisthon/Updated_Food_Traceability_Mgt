@@ -55,6 +55,19 @@ public class ProductImpl extends UnicastRemoteObject implements ProductInterface
                         product.setProductStatus(new java.util.HashSet<>());
                     }
                 }
+
+                // Now handle the User collection within the Product's associated User
+                User associatedUser = product.getUsers(); // Assuming getUsers() is the correct getter
+                if (associatedUser != null && associatedUser.getProducts() != null) {
+                    try {
+                        associatedUser.getProducts().size(); // Force initialization
+                        // Ensure model.User has setProducts(Set<Product>)
+                        associatedUser.setProducts(new java.util.HashSet<>(associatedUser.getProducts()));
+                    } catch (org.hibernate.LazyInitializationException lie) {
+                        System.err.println("LazyInitializationException in ProductImpl.retreiveAll for associatedUser.products (User ID: " + associatedUser.getUserId() + ", Product ID: " + product.getProductId() + "): " + lie.getMessage());
+                        associatedUser.setProducts(new java.util.HashSet<>()); // Set to empty HashSet on error
+                    }
+                }
             }
         }
         return productList;
