@@ -60,7 +60,7 @@ public class DashboardForm extends JFrame {
         styleButton(btnManageProducts, buttonFont, buttonSize, "View and manage existing products.");
 
         btnManageUsers = new JButton("Manage Users");
-        styleButton(btnManageUsers, buttonFont, buttonSize, "Manage user accounts (Admin only).");
+        styleButton(btnManageUsers, buttonFont, buttonSize, "View and manage user accounts."); // Updated tooltip
 
         btnViewProductLogs = new JButton("View Product Activity Logs");
         styleButton(btnViewProductLogs, buttonFont, buttonSize, "View detailed activity logs for products.");
@@ -81,13 +81,11 @@ public class DashboardForm extends JFrame {
         buttonPanel.add(btnManageUsers); // Add here, visibility/enabled state managed below
         buttonPanel.add(btnLogout);
 
-        // Role-Based Visibility/Enablement for "Manage Users"
-        if (currentUser != null && "admin".equalsIgnoreCase(currentUser.getRole())) {
-            btnManageUsers.setEnabled(true);
-        } else {
-            btnManageUsers.setEnabled(false);
-            btnManageUsers.setToolTipText("Manage user accounts (Admin access required).");
-        }
+        // Role-Based Visibility/Enablement for "Manage Users" - REMOVED, button is always enabled
+        btnManageUsers.setEnabled(true);
+        // Tooltip was updated in the styleButton call earlier, or could be set here again if needed.
+        // btnManageUsers.setToolTipText("View and manage user accounts.");
+
 
         mainPanel.add(buttonPanel, BorderLayout.CENTER);
         add(mainPanel);
