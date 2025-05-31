@@ -5,6 +5,7 @@ import java.util.List;
 import model.ProductStatusLog;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.Query; // Ensure this import is present
 
 
 public class ProductStatusLogDao {
@@ -77,9 +78,9 @@ public class ProductStatusLogDao {
             // If the field is named differently (e.g., 'product' and it's an association,
             // the HQL might need to be 'FROM ProductStatusLog psl WHERE psl.product.productId = :productId')
             // For this task, we assume a direct 'productId' field as implied by the method signature and typical usage.
-            productStatusLogList = ss.createQuery("FROM ProductStatusLog WHERE productId = :productId", ProductStatusLog.class)
-                                     .setParameter("productId", productId)
-                                     .list();
+            org.hibernate.Query query = ss.createQuery("FROM ProductStatusLog WHERE productId = :productId");
+            query.setParameter("productId", productId);
+            productStatusLogList = (List<ProductStatusLog>) query.list(); // Cast the result
         } catch (Exception ex) {
             ex.printStackTrace(); // Consider more robust logging
         } finally {
