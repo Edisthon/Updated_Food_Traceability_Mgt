@@ -1,17 +1,16 @@
 package view;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.ArrayList;
+import java.util.ArrayList; // Added for currentLogList initialization
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date; // Required for new Date() if used, and for log.getTimestamp()
+import java.util.Date; // Added for main method dummy data
 import model.Product;
 import model.User;
 import model.ProductUserLog;
@@ -23,192 +22,224 @@ public class ProductTraceabilityViewForm extends JFrame {
 
     private User currentUser;
     private Product productToTrace;
+    private int selectedProductId = -1; // Initialize to indicate no specific ID yet
+
     private JTable logTable;
     private DefaultTableModel tableModel;
     private ProductUserLogInterface logService;
-    private ProductInterface productService; // To fetch product details if only ID is given
+    private ProductInterface productService;
     private JLabel lblTitle;
+    private SimpleDateFormat dateTimeFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private List<ProductUserLog> currentLogList = new ArrayList<>(); // Added initialization
+    private JPanel mainPanel; // Declare mainPanel as a class member
 
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
+    // Constructor for when a Product object is provided
     public ProductTraceabilityViewForm(User currentUser, Product product) {
         this.currentUser = currentUser;
         this.productToTrace = product;
-        commonConstructorSetup();
-        if (productToTrace != null) {
-            updateTitle();
-            loadTraceabilityLogs();
-        } else {
-             if(lblTitle!=null) lblTitle.setText("Traceability Report (No Product Selected)");
-             JOptionPane.showMessageDialog(this, "No product data provided.", "Error", JOptionPane.ERROR_MESSAGE);
+        if (product != null) {
+            this.selectedProductId = product.getProductId();
         }
+        commonConstructorSetup();
+        updateTitle(); // Update title after productToTrace is set
+        loadTraceabilityLogs();
         setVisible(true);
     }
 
+    // Constructor for when only a productId is provided
     public ProductTraceabilityViewForm(User currentUser, int productId) {
         this.currentUser = currentUser;
-        commonConstructorSetup(); // Init services and basic UI elements
-        fetchProductDetails(productId); // Fetch product, then load logs
-        // setVisible will be called by fetchProductDetails or its callback if async, or here if sync
+        this.selectedProductId = productId;
+        // productToTrace will be fetched in fetchProductDetails
+        commonConstructorSetup();
+        fetchProductDetails(productId); // This will set productToTrace, then updateTitle and loadLogs
+        // setVisible(true) is called after fetchProductDetails completes or in it.
     }
 
-    private void commonConstructorSetup(){
+    private void commonConstructorSetup() {
         try {
             logService = RmiClientUtil.getProductUserLogService();
             productService = RmiClientUtil.getProductService();
         } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Failed to connect to services: " + e.getMessage(),
-                                          "Connection Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error initializing services: " + e.getMessage(), "Service Error", JOptionPane.ERROR_MESSAGE);
+            // Depending on severity, might want to disable form or close
         }
         initComponents(); // Initialize UI components
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setResizable(true);
-        setMinimumSize(new Dimension(750, 500));
-        setLocationRelativeTo(null);
-    }
-
-    private void fetchProductDetails(int productId) {
-        if (productService == null) {
-            JOptionPane.showMessageDialog(this, "Product service not available.", "Error", JOptionPane.ERROR_MESSAGE);
-            lblTitle.setText("Traceability Report (Service Error)");
-            setVisible(true); // Show the form even with error
-            pack();
-            return;
-        }
-        try {
-            // Assuming ProductInterface has a method like getProductById(int)
-            // For now, using retrieveById which might need a Product object
-            Product p = new Product();
-            p.setProductId(productId); // Need to ensure Product model has a simple constructor or setters
-            this.productToTrace = productService.retrieveById(p);
-
-            if (this.productToTrace != null) {
-                updateTitle();
-                loadTraceabilityLogs();
-            } else {
-                lblTitle.setText("Traceability Report (Product ID: " + productId + " not found)");
-                JOptionPane.showMessageDialog(this, "Product with ID " + productId + " not found.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            lblTitle.setText("Traceability Report (Error fetching product ID: " + productId + ")");
-            JOptionPane.showMessageDialog(this, "Error fetching product details: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-        setVisible(true); // Show the form after attempting to fetch
-        pack();
+        setLocationRelativeTo(null); // Center on screen before sizing
     }
 
     private void updateTitle() {
-        if (productToTrace != null && lblTitle != null) {
-            lblTitle.setText("Traceability Report for Product: " + productToTrace.getName() + " (ID: " + productToTrace.getProductId() + ")");
+        if (productToTrace != null) {
             setTitle("Product Traceability: " + productToTrace.getName());
-        } else if (lblTitle != null){
-             lblTitle.setText("Traceability Report");
-             setTitle("Product Traceability");
+            if (lblTitle != null) { // Ensure lblTitle is initialized
+                 lblTitle.setText("Traceability Report for Product: " + productToTrace.getName() + " (ID: " + productToTrace.getProductId() + ")");
+            }
+        } else if (selectedProductId != -1) {
+            setTitle("Product Traceability: ID " + selectedProductId);
+            if (lblTitle != null) {
+                 lblTitle.setText("Traceability Report for Product ID: " + selectedProductId + " (Loading details...)");
+            }
+        } else {
+            setTitle("Product Traceability");
+             if (lblTitle != null) {
+                lblTitle.setText("Traceability Report (No Product Specified)");
+             }
         }
     }
 
 
     private void initComponents() {
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10)); // Use EmptyBorder for padding
         mainPanel.setBackground(new Color(240, 240, 240));
 
-        lblTitle = new JLabel("Traceability Report Loading...", SwingConstants.CENTER);
+        lblTitle = new JLabel("Traceability Report", SwingConstants.CENTER);
         lblTitle.setFont(new Font("Tahoma", Font.BOLD, 18));
         lblTitle.setForeground(new Color(50,50,50));
         mainPanel.add(lblTitle, BorderLayout.NORTH);
+        // updateTitle(); // Called after productToTrace is potentially set
 
+        // Center Panel (Table)
         String[] columnNames = {"Timestamp", "Action", "User", "Location", "Details"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
         logTable = new JTable(tableModel);
         logTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        logTable.getTableHeader().setReorderingAllowed(false); // Usually chronological order is fixed
+        logTable.getTableHeader().setReorderingAllowed(false);
+        logTable.getTableHeader().setFont(new Font("Tahoma", Font.BOLD, 12));
         logTable.setFont(new Font("Tahoma", Font.PLAIN, 12));
-        logTable.getTableHeader().setFont(new Font("Tahoma", Font.BOLD, 13));
-        logTable.setRowHeight(25);
-        logTable.setAutoCreateRowSorter(true); // Allow sorting by columns
+        logTable.setRowHeight(22);
+        logTable.setFillsViewportHeight(true);
+        logTable.setAutoCreateRowSorter(true);
+
 
         JScrollPane scrollPane = new JScrollPane(logTable);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
+        // Bottom Panel (Buttons)
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        buttonPanel.setOpaque(false);
+        buttonPanel.setBackground(mainPanel.getBackground());
 
         JButton btnRefresh = new JButton("Refresh");
-        btnRefresh.setFont(new Font("Tahoma", Font.BOLD, 12));
-        btnRefresh.setToolTipText("Reload the traceability logs for this product.");
-        buttonPanel.add(btnRefresh);
+        styleButton(btnRefresh);
+        btnRefresh.setToolTipText("Reload the log data for this product.");
+        btnRefresh.addActionListener(e -> loadTraceabilityLogs());
 
         JButton btnClose = new JButton("Close");
-        btnClose.setFont(new Font("Tahoma", Font.BOLD, 12));
+        styleButton(btnClose);
         btnClose.setToolTipText("Close this window.");
-        buttonPanel.add(btnClose);
-
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-        add(mainPanel);
-
-        // Action Listeners
-        btnRefresh.addActionListener(e -> loadTraceabilityLogs());
         btnClose.addActionListener(e -> dispose());
+
+        buttonPanel.add(btnRefresh);
+        buttonPanel.add(btnClose);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        add(mainPanel);
+        // pack() and setMinimumSize will be called after data loading or by constructors
     }
 
-    public void loadTraceabilityLogs() {
-        if (productToTrace == null) {
-            if (selectedProductId != -1 && productService != null) {
-                // Attempt to re-fetch if productToTrace is null but we have an ID
-                // This could happen if initial fetch failed but service is now up.
-                fetchProductDetails(selectedProductId); // This will call loadTraceabilityLogs again if successful
-                return; // Avoid proceeding with null productToTrace now
-            }
-            JOptionPane.showMessageDialog(this, "Product information is not available to load logs.", "Error", JOptionPane.ERROR_MESSAGE);
-            tableModel.setRowCount(0); // Clear table
-            tableModel.addRow(new Object[]{"Product details missing.", "", "", "", ""});
+
+    private void styleButton(JButton button) {
+        button.setFont(new Font("Tahoma", Font.BOLD, 12));
+        button.setBackground(new Color(70, 130, 180));
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setPreferredSize(new Dimension(100, 30));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
+
+    private void fetchProductDetails(int productId) {
+        if (productService == null) {
+            JOptionPane.showMessageDialog(this, "Product service not available.", "Service Error", JOptionPane.ERROR_MESSAGE);
+            updateTitle();
+            loadTraceabilityLogs(); // Will show product not available in table
+            packAndShow();
             return;
         }
-        if (logService == null) {
-             try { logService = RmiClientUtil.getProductUserLogService(); }
-             catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Log service connection error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                tableModel.setRowCount(0);
-                tableModel.addRow(new Object[]{"Log service unavailable.", "", "", "", ""});
-                return;
-            }
-        }
-         if (logService == null) { // Still null
-             JOptionPane.showMessageDialog(this, "Log service is unavailable.", "Service Error", JOptionPane.ERROR_MESSAGE);
-             tableModel.setRowCount(0);
-             tableModel.addRow(new Object[]{"Log service unavailable.", "", "", "", ""});
-             return;
-         }
-
-
-        tableModel.setRowCount(0);
         try {
-            List<ProductUserLog> logs = logService.getLogsByProductId(productToTrace.getProductId());
-            if (logs != null && !logs.isEmpty()) {
-                // Sort logs by timestamp chronologically (ascending)
-                Collections.sort(logs, Comparator.comparing(ProductUserLog::getTimestamp));
-                for (ProductUserLog log : logs) {
-                    String userName = (log.getUser() != null && log.getUser().getUsername() != null) ? log.getUser().getUsername() : "N/A";
-                    tableModel.addRow(new Object[]{
-                        log.getTimestamp() != null ? DATE_FORMAT.format(log.getTimestamp()) : "N/A",
-                        log.getAction() != null ? log.getAction() : "N/A",
-                        userName,
-                        log.getLocation() != null ? log.getLocation() : "N/A",
-                        log.getDetails() != null ? log.getDetails() : ""
-                    });
-                }
-            } else {
-                 tableModel.addRow(new Object[]{"No activity logs found for this product.", "", "", "", ""});
+            Product p = new Product();
+            p.setProductId(productId);
+            this.productToTrace = productService.retrieveById(p);
+            if (this.productToTrace == null) {
+                 JOptionPane.showMessageDialog(this, "Product details not found for ID: " + productId, "Not Found", JOptionPane.WARNING_MESSAGE);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error loading traceability logs: " + e.getMessage(), "Loading Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error fetching product details: " + e.getMessage(), "Service Error", JOptionPane.ERROR_MESSAGE);
+        }
+        updateTitle();
+        loadTraceabilityLogs();
+        packAndShow();
+    }
+
+    private void packAndShow(){
+        pack();
+        setMinimumSize(new Dimension(700, 450)); // Ensure minimum size after pack
+        setLocationRelativeTo(null); // Re-center after pack
+        // setVisible(true) is handled by constructors after this flow
+    }
+
+
+    public void loadTraceabilityLogs() {
+        if (productToTrace == null) {
+            if (this.selectedProductId != -1 && productService != null) {
+                // This case should ideally be handled by the constructor calling fetchProductDetails
+                // If fetchProductDetails failed, productToTrace would be null.
+                // So, we show a message based on selectedProductId if available.
+                updateTitle(); // Ensure title reflects current state
+                tableModel.setRowCount(0);
+                tableModel.addRow(new Object[]{"Product details for ID " + this.selectedProductId + " could not be fetched or are unavailable.", "", "", "", ""});
+                return;
+            }
+            // If both productToTrace and selectedProductId are invalid
+            updateTitle(); // Ensure title reflects current state (e.g. "No Product Specified")
+            tableModel.setRowCount(0);
+            tableModel.addRow(new Object[]{"Product not specified or details unavailable.", "", "", "", ""});
+            return;
+        }
+
+        if (logService == null) {
+            JOptionPane.showMessageDialog(this, "Log service not available.", "Service Error", JOptionPane.ERROR_MESSAGE);
+            tableModel.setRowCount(0);
+            tableModel.addRow(new Object[]{"Log service unavailable.", "", "", "", ""});
+            return;
+        }
+
+        tableModel.setRowCount(0);
+        currentLogList.clear();
+
+        try {
+            List<ProductUserLog> logs = logService.getLogsByProductId(productToTrace.getProductId());
+            if (logs != null && !logs.isEmpty()) {
+                Collections.sort(logs, Comparator.comparing(ProductUserLog::getTimestamp));
+                currentLogList.addAll(logs);
+
+                for (ProductUserLog log : currentLogList) {
+                    String userName = (log.getUser() != null && log.getUser().getUsername() != null) ? log.getUser().getUsername() : "N/A";
+                    String timestampStr = (log.getTimestamp() != null) ? dateTimeFormatter.format(log.getTimestamp()) : "N/A";
+                    tableModel.addRow(new Object[]{
+                            timestampStr,
+                            log.getAction() != null ? log.getAction() : "",
+                            userName,
+                            log.getLocation() != null ? log.getLocation() : "",
+                            log.getDetails() != null ? log.getDetails() : ""
+                    });
+                }
+            } else {
+                tableModel.addRow(new Object[]{"No activity logs found for this product.", "", "", "", ""});
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error loading traceability logs: " + e.getMessage(), "Log Error", JOptionPane.ERROR_MESSAGE);
             tableModel.setRowCount(0);
             tableModel.addRow(new Object[]{"Error loading logs.", "", "", "", ""});
         }
@@ -218,16 +249,22 @@ public class ProductTraceabilityViewForm extends JFrame {
         SwingUtilities.invokeLater(() -> {
             User testUser = new User();
             testUser.setUserId(1);
-            testUser.setUsername("testUser");
+            testUser.setUsername("testadmin");
+            testUser.setRole("admin");
 
-            // Option 1: Test with a Product object
             Product testProduct = new Product();
-            testProduct.setProductId(101); // Ensure Product has setProductId
-            testProduct.setName("Organic Bananas Batch 7");
+            testProduct.setProductId(101); // Example ID
+            testProduct.setName("Test Product Alpha");
+            testProduct.setBatchNumber("B101");
+            testProduct.setOrigin("Test Origin");
+            // Assuming Product has setRegistrationDate or similar for testing
+            // testProduct.setRegistrationDate(new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
+
+            // Test with Product object - This constructor will call setVisible(true)
             // new ProductTraceabilityViewForm(testUser, testProduct);
 
-            // Option 2: Test with a Product ID
-            new ProductTraceabilityViewForm(testUser, 102); // Assuming product ID 102 exists
+            // Test with Product ID - This constructor will call setVisible(true) via fetchProductDetails
+            new ProductTraceabilityViewForm(testUser, 102);
         });
     }
 }
