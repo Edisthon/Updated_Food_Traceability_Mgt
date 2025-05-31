@@ -162,7 +162,7 @@ public class ProductListForm extends JFrame {
         button.setFocusPainted(false);
     }
 
-    private void loadProducts() {
+    public void loadProducts() { // Changed visibility to public
         loadProducts(null);
     }
 
