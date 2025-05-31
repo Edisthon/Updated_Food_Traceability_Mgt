@@ -15,50 +15,70 @@ import org.hibernate.Query;
 
 public class UserDao {
     
-     public String registerUser(User user){
-        try{
-            //1. Create a Session
-            Session ss= HibernateUtil.getSessionFactory().openSession();
-            //2.Create a transaction
-            Transaction tr= ss.beginTransaction();
-            ss.merge(user); // Corrected to merge for update
+    public String registerUser(User user) {
+        Session ss = null;
+        Transaction tr = null;
+        try {
+            ss = HibernateUtil.getSessionFactory().openSession();
+            tr = ss.beginTransaction();
+            ss.save(user); // Correct for new entity
             tr.commit();
-            ss.close();
-            return "Data saved succesfully";
-        }catch(Exception ex){
+            return "Data saved successfully";
+        } catch (Exception ex) {
+            if (tr != null) {
+                tr.rollback();
+            }
             ex.printStackTrace();
+            return "Error saving user: " + ex.getMessage();
+        } finally {
+            if (ss != null) {
+                ss.close();
+            }
         }
-        return null;
     }
-     public String updateUser(User user){
-        try{
-            //1. Create a Session
-            Session ss= HibernateUtil.getSessionFactory().openSession();
-            //2.Create a transaction
-            Transaction tr= ss.beginTransaction();
-            ss.delete(user); // Corrected to delete
+
+    public String updateUser(User user) {
+        Session ss = null;
+        Transaction tr = null;
+        try {
+            ss = HibernateUtil.getSessionFactory().openSession();
+            tr = ss.beginTransaction();
+            ss.merge(user); // Correct for updating detached or existing entity
             tr.commit();
-            ss.close();
-            return "Data updated succesfully";
-        }catch(Exception ex){
+            return "Data updated successfully";
+        } catch (Exception ex) {
+            if (tr != null) {
+                tr.rollback();
+            }
             ex.printStackTrace();
+            return "Error updating user: " + ex.getMessage();
+        } finally {
+            if (ss != null) {
+                ss.close();
+            }
         }
-        return null;
     }
-     public String deleteUser(User user){
-        try{
-            //1. Create a Session
-            Session ss= HibernateUtil.getSessionFactory().openSession();
-            //2.Create a transaction
-            Transaction tr= ss.beginTransaction();
-            ss.save(user);
+
+    public String deleteUser(User user) {
+        Session ss = null;
+        Transaction tr = null;
+        try {
+            ss = HibernateUtil.getSessionFactory().openSession();
+            tr = ss.beginTransaction();
+            ss.delete(user); // Correct for deleting an entity
             tr.commit();
-            ss.close();
-            return "Data deleted succesfully";
-        }catch(Exception ex){
+            return "Data deleted successfully";
+        } catch (Exception ex) {
+            if (tr != null) {
+                tr.rollback();
+            }
             ex.printStackTrace();
+            return "Error deleting user: " + ex.getMessage();
+        } finally {
+            if (ss != null) {
+                ss.close();
+            }
         }
-        return null;
     }
      
       public List<User> retreiveAll(){
