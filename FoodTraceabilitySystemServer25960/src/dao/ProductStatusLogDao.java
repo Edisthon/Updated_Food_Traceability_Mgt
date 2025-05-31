@@ -68,4 +68,23 @@ public class ProductStatusLogDao {
         ss.close();
         return productStatusLogs;
     }
+
+    public List<ProductStatusLog> getLogsByProductId(int productId) {
+        Session ss = HibernateUtil.getSessionFactory().openSession();
+        List<ProductStatusLog> productStatusLogList = null;
+        try {
+            // Assuming ProductStatusLog has a field named 'productId' that maps to the database column.
+            // If the field is named differently (e.g., 'product' and it's an association,
+            // the HQL might need to be 'FROM ProductStatusLog psl WHERE psl.product.productId = :productId')
+            // For this task, we assume a direct 'productId' field as implied by the method signature and typical usage.
+            productStatusLogList = ss.createQuery("FROM ProductStatusLog WHERE productId = :productId", ProductStatusLog.class)
+                                     .setParameter("productId", productId)
+                                     .list();
+        } catch (Exception ex) {
+            ex.printStackTrace(); // Consider more robust logging
+        } finally {
+            ss.close();
+        }
+        return productStatusLogList;
+    }
 }

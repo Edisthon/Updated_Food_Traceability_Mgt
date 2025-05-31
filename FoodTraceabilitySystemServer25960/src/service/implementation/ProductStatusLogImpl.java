@@ -46,6 +46,17 @@ public class ProductStatusLogImpl extends UnicastRemoteObject implements Product
         return dao.retrieveById(productStatusLog);
     }
     
-    
+    @Override
+    public List<ProductStatusLog> getLogsByProductId(int productId) throws RemoteException {
+        try {
+            return dao.getLogsByProductId(productId);
+        } catch (Exception e) {
+            // It's generally good practice to log the exception on the server side.
+            System.err.println("Error in ProductStatusLogImpl.getLogsByProductId: " + e.getMessage());
+            e.printStackTrace();
+            // Wrap and throw as RemoteException as per interface contract
+            throw new RemoteException("Error fetching logs by product ID: " + e.getMessage(), e);
+        }
+    }
     
 }

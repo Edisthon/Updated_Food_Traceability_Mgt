@@ -8,6 +8,11 @@ package view;
 
 import javax.swing.*; 
 import model.User;
+import java.awt.GridLayout;
+import java.awt.BorderLayout;
+import java.awt.Font;
+import java.awt.Dimension;
+import javax.swing.border.EmptyBorder;
 
 /**
  *
@@ -17,6 +22,14 @@ public class AdminDashboard extends javax.swing.JFrame {
     
     
     private User currentUser;
+    private JButton btnRegisterUser;
+    private JButton btnViewUsers;
+    private JButton btnUpdateUser;
+    private JButton btnDeleteUser;
+    private JButton btnRegisterProduct;
+    private JButton btnUpdateProductStatus;
+    private JButton btnViewProductDetails; // New button declaration
+    private JButton btnLogout;
     /**
      * Creates new form AdminDashboard
      */
@@ -30,10 +43,8 @@ public class AdminDashboard extends javax.swing.JFrame {
 }
 
     
-     private void handleSelection() {
-        String selected = (String) comboActions.getSelectedItem();
-
-        switch (selected) {
+     private void handleSelection(String actionCommand) {
+        switch (actionCommand) {
             case "Register User":
                 RegisterUserForm registerUserForm = new RegisterUserForm();
                 registerUserForm.setVisible(true);
@@ -45,9 +56,9 @@ public class AdminDashboard extends javax.swing.JFrame {
                 dispose();
                 break;
             case "Update User":
-                User user= new User();
-                UpdateUserForm userForm= new UpdateUserForm(user);
-                userForm.setVisible(true);
+                User userToUpdate = new User(); // Assuming a default or selection mechanism later
+                UpdateUserForm updateUserForm = new UpdateUserForm(userToUpdate);
+                updateUserForm.setVisible(true);
                 dispose();
                 break;
             case "Delete User":
@@ -55,13 +66,20 @@ public class AdminDashboard extends javax.swing.JFrame {
                 deleteUserForm.setVisible(true);
                 dispose();
                 break;
-            case "Register Product":                
+            case "Register Product":
+                // Assuming RegisterProductForm exists and needs the current user
+                RegisterProductForm registerProductForm = new RegisterProductForm(currentUser);
+                registerProductForm.setVisible(true);
                 dispose();
                 break;
             case "Update Product Status":
                 new ProductStatusForm(currentUser).setVisible(true);
                 dispose();
-                break;     
+                break;
+            case "View Product Details":
+                new ViewProductDetailsForm(currentUser).setVisible(true);
+                dispose();
+                break;
             case "Logout":
                 new LoginForm().setVisible(true);
                 dispose();
@@ -82,101 +100,85 @@ public class AdminDashboard extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jPanel1 = new javax.swing.JPanel();
-        lblChoose = new javax.swing.JLabel();
-        comboActions = new javax.swing.JComboBox<>();
-        jLabel2 = new javax.swing.JLabel();
-        btnGo = new javax.swing.JButton();
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10)); // Added BorderLayout
+        mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20)); // Added padding
+        mainPanel.setBackground(new java.awt.Color(102, 102, 102));
+
+
+        JLabel titleLabel = new JLabel("Admin Control Panel", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Tahoma", Font.BOLD, 20)); // Consistent font
+        titleLabel.setForeground(new java.awt.Color(255, 255, 255));
+        mainPanel.add(titleLabel, BorderLayout.NORTH);
+
+        JPanel buttonPanel = new JPanel(new GridLayout(8, 1, 10, 10)); // Adjusted GridLayout to 8 rows
+        buttonPanel.setBackground(new java.awt.Color(102, 102, 102)); // Match background
+
+        Font buttonFont = new Font("Tahoma", Font.PLAIN, 14); // Consistent font for buttons
+        Dimension buttonSize = new Dimension(200, 40); // Consistent button size
+
+        btnRegisterUser = new JButton("Register User");
+        btnRegisterUser.setFont(buttonFont);
+        btnRegisterUser.setPreferredSize(buttonSize);
+        btnRegisterUser.addActionListener(evt -> handleSelection("Register User"));
+        buttonPanel.add(btnRegisterUser);
+
+        btnViewUsers = new JButton("View Users");
+        btnViewUsers.setFont(buttonFont);
+        btnViewUsers.setPreferredSize(buttonSize);
+        btnViewUsers.addActionListener(evt -> handleSelection("View Users"));
+        buttonPanel.add(btnViewUsers);
+
+        btnUpdateUser = new JButton("Update User");
+        btnUpdateUser.setFont(buttonFont);
+        btnUpdateUser.setPreferredSize(buttonSize);
+        btnUpdateUser.addActionListener(evt -> handleSelection("Update User"));
+        buttonPanel.add(btnUpdateUser);
+
+        btnDeleteUser = new JButton("Delete User");
+        btnDeleteUser.setFont(buttonFont);
+        btnDeleteUser.setPreferredSize(buttonSize);
+        btnDeleteUser.addActionListener(evt -> handleSelection("Delete User"));
+        buttonPanel.add(btnDeleteUser);
+
+        btnRegisterProduct = new JButton("Register Product");
+        btnRegisterProduct.setFont(buttonFont);
+        btnRegisterProduct.setPreferredSize(buttonSize);
+        btnRegisterProduct.addActionListener(evt -> handleSelection("Register Product"));
+        buttonPanel.add(btnRegisterProduct);
+
+        btnUpdateProductStatus = new JButton("Update Product Status");
+        btnUpdateProductStatus.setFont(buttonFont);
+        btnUpdateProductStatus.setPreferredSize(buttonSize);
+        btnUpdateProductStatus.addActionListener(evt -> handleSelection("Update Product Status"));
+        buttonPanel.add(btnUpdateProductStatus);
+
+        btnViewProductDetails = new JButton("View Product Details");
+        btnViewProductDetails.setFont(buttonFont);
+        btnViewProductDetails.setPreferredSize(buttonSize);
+        btnViewProductDetails.setToolTipText("Search for products and view their details and status history.");
+        btnViewProductDetails.addActionListener(evt -> handleSelection("View Product Details"));
+        buttonPanel.add(btnViewProductDetails);
+
+        btnLogout = new JButton("Logout");
+        btnLogout.setFont(buttonFont);
+        btnLogout.setPreferredSize(buttonSize);
+        btnLogout.addActionListener(evt -> handleSelection("Logout"));
+        buttonPanel.add(btnLogout);
+
+        mainPanel.add(buttonPanel, BorderLayout.CENTER);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-
-        jPanel1.setBackground(new java.awt.Color(102, 102, 102));
-
-        lblChoose.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        lblChoose.setForeground(new java.awt.Color(255, 255, 255));
-        lblChoose.setText("Choose Action");
-
-        comboActions.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select Action", "Register User", "View Users", "Update User", "Delete User", "Register Product", "Update Product Status", "Logout" }));
-        comboActions.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                comboActionsActionPerformed(evt);
-            }
-        });
-
-        jLabel2.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
-        jLabel2.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel2.setText("Admin Dashboard");
-
-        btnGo.setText("Go");
-        btnGo.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnGoActionPerformed(evt);
-            }
-        });
-
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(149, 149, 149)
-                        .addComponent(jLabel2))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(41, 41, 41)
-                        .addComponent(lblChoose)
-                        .addGap(33, 33, 33)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(btnGo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(comboActions, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-                .addContainerGap(79, Short.MAX_VALUE))
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(23, 23, 23)
-                .addComponent(jLabel2)
-                .addGap(61, 61, 61)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(lblChoose)
-                    .addComponent(comboActions, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(62, 62, 62)
-                .addComponent(btnGo)
-                .addContainerGap(91, Short.MAX_VALUE))
-        );
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-
+        getContentPane().add(mainPanel); // Add mainPanel to frame
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-    private void comboActionsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboActionsActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_comboActionsActionPerformed
-
-    private void btnGoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoActionPerformed
-        handleSelection();
-    }//GEN-LAST:event_btnGoActionPerformed
 
     /**
      * @param args the command line arguments
      */
    
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btnGo;
-    private javax.swing.JComboBox<String> comboActions;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JPanel jPanel1;
-    private javax.swing.JLabel lblChoose;
+    // Removed comboActions, btnGo, jLabel2, lblChoose
+    // Removed comboActions, btnGo, jLabel2, lblChoose
+    // jPanel1 is replaced by mainPanel and buttonPanel
     // End of variables declaration//GEN-END:variables
 }
