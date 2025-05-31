@@ -9,6 +9,7 @@ import dao.UserDao;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Date;
+import java.util.HashSet; // Added for PersistentSet handling
 import java.util.List;
 import java.util.Properties; // Added for JavaMail
 import javax.mail.Authenticator; // Added for JavaMail
@@ -51,12 +52,53 @@ public class UserImpl extends UnicastRemoteObject implements UserInterface{
 
     @Override
     public List<User> retreiveAll() throws RemoteException {
-        return dao.retreiveAll();
+        List<User> userList = dao.retreiveAll();
+        if (userList != null) {
+            for (User user : userList) {
+                if (user.getProducts() != null) {
+                    try {
+                        user.getProducts().size(); // Initialize
+                        user.setProducts(new java.util.HashSet<>(user.getProducts()));
+                    } catch (org.hibernate.LazyInitializationException lie) {
+                        System.err.println("LazyInitializationException in UserImpl.retreiveAll for user.products (ID: " + user.getUserId() + "): " + lie.getMessage());
+                        user.setProducts(new java.util.HashSet<>());
+                    }
+                }
+                // Similarly, handle other potential lazy collections on User if they exist
+                // e.g., user.getProductUserLogs()
+            }
+        }
+        return userList;
     }
 
     @Override
-    public User retrieveById(User user) throws RemoteException {
-        return dao.retrieveById(user);
+    public User retrieveById(User userInput) throws RemoteException { // Parameter name from interface is 'user', let's stick to 'userInput' for clarity if it differs from the 'user' variable inside. Assuming it's 'userInput' as per subtask.
+        User retrievedUser = dao.retrieveById(userInput);
+        if (retrievedUser != null) {
+            // Handle Hibernate PersistentSet for RMI compatibility for products
+            if (retrievedUser.getProducts() != null) {
+                try {
+                    // Force initialization if lazy
+                    retrievedUser.getProducts().size();
+                    // Convert to a standard HashSet for RMI serialization
+                    retrievedUser.setProducts(new java.util.HashSet<>(retrievedUser.getProducts()));
+                } catch (org.hibernate.LazyInitializationException lie) {
+                    System.err.println("LazyInitializationException in UserImpl.retrieveById for products: " + lie.getMessage());
+                    retrievedUser.setProducts(new java.util.HashSet<>()); // Or set to null
+                }
+            }
+            // Add handling for other collections if User model has them, e.g., productUserLogs
+            // if (retrievedUser.getProductUserLogs() != null) { // Assuming getProductUserLogs exists
+            //     try {
+            //         retrievedUser.getProductUserLogs().size();
+            //         retrievedUser.setProductUserLogs(new java.util.HashSet<>(retrievedUser.getProductUserLogs()));
+            //     } catch (org.hibernate.LazyInitializationException lie) {
+            //          System.err.println("LazyInitializationException in UserImpl.retrieveById for productUserLogs: " + lie.getMessage());
+            //          retrievedUser.setProductUserLogs(new java.util.HashSet<>());
+            //     }
+            // }
+        }
+        return retrievedUser;
     }
 
     @Override
@@ -90,6 +132,19 @@ public class UserImpl extends UnicastRemoteObject implements UserInterface{
                 } catch (Exception e) {
                     e.printStackTrace();
                     // Log this error, but proceed with login as OTP was verified.
+                }
+
+                // Handle Hibernate PersistentSet for RMI compatibility
+                if (user.getProducts() != null) {
+                    try {
+                        // Force initialization if lazy
+                        user.getProducts().size();
+                        // Convert to a standard HashSet for RMI serialization
+                        user.setProducts(new java.util.HashSet<>(user.getProducts()));
+                    } catch (org.hibernate.LazyInitializationException lie) {
+                        System.err.println("LazyInitializationException while accessing user.getProducts() in loginUser: " + lie.getMessage());
+                        user.setProducts(new java.util.HashSet<>()); // Or set to null
+                    }
                 }
                 return user; // Login successful
             } else {
