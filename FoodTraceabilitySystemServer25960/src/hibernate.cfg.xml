@@ -51,5 +51,7 @@ Contributor(s):
     <mapping class="model.User"/>
     <mapping class="model.ProductStatusLog"/>
     <mapping class="model.Product"/>
+    <mapping class="model.ProductUserLog"/>
+    <mapping class="model.UserOtp"/>
   </session-factory>
 </hibernate-configuration>

@@ -13,14 +13,17 @@ public class Product implements Serializable{
     private String name;
     private String origin;
     private String qrCode;
-    private String registrationDate;    
+    private String registrationDate;
+    @Column(name = "batch_number") // Optional, but good for clarity
+    private String batchNumber;
 
-    public Product(int productId, String name, String origin, String qrCode, String registrationDate, int UserId, User users, Set<ProductStatusLog> productStatus) {
+    public Product(int productId, String name, String origin, String qrCode, String registrationDate, String batchNumber, int UserId, User users, Set<ProductStatusLog> productStatus) {
         this.productId = productId;
         this.name = name;
         this.origin = origin;
         this.qrCode = qrCode;
         this.registrationDate = registrationDate;        
+        this.batchNumber = batchNumber;
         this.users = users;
         this.productStatus = productStatus;
     }
@@ -98,7 +101,14 @@ public class Product implements Serializable{
     public void setProductStatus(Set<ProductStatusLog> productStatus) {
         this.productStatus = productStatus;
     }
-    
+
+    public String getBatchNumber() {
+        return batchNumber;
+    }
+
+    public void setBatchNumber(String batchNumber) {
+        this.batchNumber = batchNumber;
+    }
     
     
     
