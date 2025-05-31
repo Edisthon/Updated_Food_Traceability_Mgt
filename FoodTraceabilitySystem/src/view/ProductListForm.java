@@ -8,8 +8,15 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Date; // For product.getCreatedAt() if it returns Date
-import java.text.SimpleDateFormat; // For formatting date if needed
+import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.io.BufferedWriter; // Added
+import java.io.File; // Added
+import java.io.FileWriter; // Added
+import java.io.IOException; // Added
+import javax.swing.JFileChooser; // Added
+import javax.swing.filechooser.FileNameExtensionFilter; // Added for filter
+import java.awt.Desktop; // Added to open file
 
 import model.Product;
 import model.User;
@@ -138,7 +145,9 @@ public class ProductListForm extends JFrame {
         buttonPanel.add(btnViewLogs);
 
         btnGeneratePdf = new JButton("Generate PDF Report");
-        styleButton(btnGeneratePdf, "Generate a PDF report of the listed products.");
+        // Tooltip updated directly here as it's specific to this button's new functionality
+        btnGeneratePdf.setToolTipText("Generate a text report of the product list (.txt)");
+        styleButton(btnGeneratePdf, btnGeneratePdf.getToolTipText()); // Pass the updated tooltip
         buttonPanel.add(btnGeneratePdf);
 
         btnBack = new JButton("Back to Dashboard");
@@ -326,19 +335,104 @@ public class ProductListForm extends JFrame {
 
         btnViewLogs.addActionListener(e -> {
             int selectedRow = productTable.getSelectedRow();
-            if (selectedRow >= 0) {
-                // int productId = (int) tableModel.getValueAt(selectedRow, 0);
-                // new ProductUserLogListForm(currentUser, productId).setVisible(true); // Assuming this form takes productId
-                // dispose();
-                 JOptionPane.showMessageDialog(this, "View Activity Logs: Not Implemented Yet.", "TODO", JOptionPane.INFORMATION_MESSAGE);
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(this, "Please select a product to view its logs.", "No Selection", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            Product selectedProductToViewLogs = null;
+            Object idObj = productTable.getValueAt(selectedRow, 0); // Assuming ID is in column 0
+
+            if (idObj != null) {
+                int productId = (Integer) idObj;
+                // Find the product in the local productList (which should be up-to-date)
+                for (Product p : productList) { // productList is a class member holding all products
+                    if (p.getProductId() == productId) {
+                        selectedProductToViewLogs = p;
+                        break;
+                    }
+                }
+            }
+
+            if (selectedProductToViewLogs != null) {
+                // Pass the currentUser and the full Product object
+                new ProductUserLogListForm(currentUser, selectedProductToViewLogs).setVisible(true);
+                // DO NOT dispose ProductListForm here, user might want to view logs for another product.
             } else {
-                JOptionPane.showMessageDialog(this, "Please select a product to view its logs.", "Selection Required", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Could not find the details of the selected product.", "Error", JOptionPane.ERROR_MESSAGE);
+                // Optionally, refresh the list if this happens, as it might indicate a data sync issue.
+                // loadProducts();
             }
         });
 
         btnGeneratePdf.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Generate PDF Report: Not Implemented Yet.", "TODO", JOptionPane.INFORMATION_MESSAGE);
-            // Logic to generate PDF from productList or tableModel
+            if (productList.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No product data to generate a report.", "Empty List", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Save Product Report");
+            fileChooser.setSelectedFile(new File("products_report.txt")); // Default file name
+            FileNameExtensionFilter filter = new FileNameExtensionFilter("Text Files (*.txt)", "txt");
+            fileChooser.setFileFilter(filter);
+
+            int userSelection = fileChooser.showSaveDialog(this);
+
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File fileToSave = fileChooser.getSelectedFile();
+                // Ensure the file has a .txt extension
+                if (!fileToSave.getName().toLowerCase().endsWith(".txt")) {
+                    fileToSave = new File(fileToSave.getParentFile(), fileToSave.getName() + ".txt");
+                }
+
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileToSave))) {
+                    // Write Header
+                    writer.write("Product Report - Food Traceability System");
+                    writer.newLine();
+                    writer.write("Generated on: " + new java.util.Date().toString());
+                    writer.newLine();
+                    writer.write("========================================================================================================");
+                    writer.newLine();
+                    // Column Headers - match JTable but use fixed-width formatting for alignment
+                    writer.write(String.format("%-10s | %-30s | %-20s | %-30s | %-20s",
+                                               "ID", "Name", "Batch Number", "Origin", "Created Date"));
+                    writer.newLine();
+                    writer.write("--------------------------------------------------------------------------------------------------------");
+                    writer.newLine();
+
+                    // Write Data from productList (which backs the table)
+                    for (Product product : productList) {
+                        writer.write(String.format("%-10d | %-30s | %-20s | %-30s | %-20s",
+                                product.getProductId(),
+                                product.getName() != null ? product.getName() : "",
+                                product.getBatchNumber() != null ? product.getBatchNumber() : "",
+                                product.getOrigin() != null ? product.getOrigin() : "",
+                                product.getRegistrationDate() != null ? product.getRegistrationDate() : ""));
+                        writer.newLine();
+                    }
+                    writer.write("========================================================================================================");
+                    writer.newLine();
+                    writer.write("End of Report.");
+                    writer.newLine();
+
+                    JOptionPane.showMessageDialog(this, "Report saved successfully to: " + fileToSave.getAbsolutePath(), "Report Saved", JOptionPane.INFORMATION_MESSAGE);
+
+                    // Optionally, try to open the file
+                    if (Desktop.isDesktopSupported()) {
+                        try {
+                            Desktop.getDesktop().open(fileToSave);
+                        } catch (IOException ex) {
+                            // Silently ignore if can't open, or show a small error.
+                            System.err.println("Could not open the report file: " + ex.getMessage());
+                        }
+                    }
+
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Error saving report: " + ex.getMessage(), "Save Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
         });
     }
 

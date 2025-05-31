@@ -10,10 +10,16 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Date;
 import java.util.List;
-// Removed HashMap, Map, Properties, Random, javax.mail related imports implicitly by removing their usage
+import java.util.Properties; // Added for JavaMail
+import javax.mail.Authenticator; // Added for JavaMail
+import javax.mail.Message; // Added for JavaMail
+import javax.mail.MessagingException; // Added for JavaMail
+import javax.mail.PasswordAuthentication; // Added for JavaMail
+import javax.mail.Session; // Added for JavaMail
+import javax.mail.Transport; // Added for JavaMail
+import javax.mail.internet.InternetAddress; // Added for JavaMail
+import javax.mail.internet.MimeMessage; // Added for JavaMail
 import model.User;
-// Removed org.hibernate.Query and org.hibernate.Session as they are not directly used in UserImpl anymore (UserDao handles them)
-// Removed dao.HibernateUtil as it's not directly used here.
 import service.UserInterface;
 import util.OtpUtil;
 
@@ -155,11 +161,64 @@ public class UserImpl extends UnicastRemoteObject implements UserInterface{
         }
     }
 
-    // sendEmail method simplified for simulation
+    // sendEmail method re-implemented for live email sending
     private void sendEmail(String to, String otp) {
-        System.out.println("---- OTP SIMULATION ----");
-        System.out.println("To: " + to);
-        System.out.println("OTP: " + otp);
-        System.out.println("------------------------");
+        // --- BEGIN USER CONFIGURABLE SECTION ---
+        // IMPORTANT: Replace these placeholders with your actual email provider's details.
+        // For Gmail, you might need to enable "Less secure app access" or generate an "App Password".
+
+        final String FROM_EMAIL = "YOUR_EMAIL@gmail.com"; // e.g., "your.app.notification@gmail.com"
+        final String EMAIL_PASSWORD = "YOUR_EMAIL_APP_PASSWORD"; // Your Gmail password or App Password
+
+        final String SMTP_HOST = "smtp.gmail.com"; // For Gmail. Change if using another provider.
+        final String SMTP_PORT = "587"; // For Gmail TLS. Common ports: 587 (TLS), 465 (SSL)
+        // --- END USER CONFIGURABLE SECTION ---
+
+        // Get system properties
+        Properties properties = System.getProperties();
+
+        // Setup mail server properties
+        properties.put("mail.smtp.host", SMTP_HOST);
+        properties.put("mail.smtp.port", SMTP_PORT);
+        properties.put("mail.smtp.auth", "true");
+        properties.put("mail.smtp.starttls.enable", "true"); // Use true for TLS
+
+        // Get the Session object.
+        Session session = Session.getInstance(properties, new Authenticator() {
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(FROM_EMAIL, EMAIL_PASSWORD);
+            }
+        });
+
+        // session.setDebug(true); // Enable for debugging if there are connection issues
+
+        try {
+            // Create a default MimeMessage object.
+            MimeMessage message = new MimeMessage(session);
+
+            // Set From: header field of the header.
+            message.setFrom(new InternetAddress(FROM_EMAIL));
+
+            // Set To: header field of the header.
+            message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
+
+            // Set Subject: header field
+            message.setSubject("Your OTP Code - Food Traceability System");
+
+            // Now set the actual message
+            message.setText("Your One-Time Password (OTP) for the Food Traceability System is: " + otp +
+                            "\n\nThis OTP is valid for a short period. Please do not share it with anyone.");
+
+            // Send message
+            Transport.send(message);
+            System.out.println("OTP email sent successfully to " + to);
+
+        } catch (MessagingException mex) {
+            mex.printStackTrace();
+            // Consider how to handle this error in the broader application.
+            // For now, it prints to console. The calling method `requestOtpByEmail`
+            // will still return its success/failure message based on DB operations.
+            System.err.println("Error sending OTP email: " + mex.getMessage());
+        }
     }
 }
