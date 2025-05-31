@@ -12,13 +12,13 @@ import model.User;
 
 
 public interface UserInterface extends Remote{
-    String requestOtp(String username) throws RemoteException;
-    User loginUser(String username, String password) throws RemoteException;
+    String requestOtpByEmail(String email) throws RemoteException; // Changed
+    User loginUser(String email, String otp) throws RemoteException; // Changed
     public String registerUser(User users) throws RemoteException;
     public String updateUser(User users) throws RemoteException;
     public String deleteUser(User users) throws RemoteException;
     public List<User> retreiveAll() throws RemoteException;
     public User retrieveById(User user) throws RemoteException;
-    boolean verifyOtp(String username, String otp) throws RemoteException;
+    boolean verifyOtp(String email, String otp) throws RemoteException; // Changed
     
 }

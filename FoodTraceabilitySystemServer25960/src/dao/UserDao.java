@@ -21,7 +21,7 @@ public class UserDao {
             Session ss= HibernateUtil.getSessionFactory().openSession();
             //2.Create a transaction
             Transaction tr= ss.beginTransaction();
-            ss.save(user);
+            ss.merge(user); // Corrected to merge for update
             tr.commit();
             ss.close();
             return "Data saved succesfully";
@@ -36,7 +36,7 @@ public class UserDao {
             Session ss= HibernateUtil.getSessionFactory().openSession();
             //2.Create a transaction
             Transaction tr= ss.beginTransaction();
-            ss.save(user);
+            ss.delete(user); // Corrected to delete
             tr.commit();
             ss.close();
             return "Data updated succesfully";
@@ -93,6 +93,27 @@ public class UserDao {
     }
     return user;
 }
+
+    public User findByEmail(String email) {
+        Session session = null;
+        User user = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            // Transaction is not strictly needed for a read-only query like this.
+            Query query = session.createQuery("FROM User WHERE email = :email");
+            query.setParameter("email", email);
+            query.setMaxResults(1); // Ensure only one result for unique email
+            user = (User) query.uniqueResult();
+        } catch (Exception e) {
+            e.printStackTrace(); // Consider using a logger
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+        return user;
+    }
+
    public void saveOtp(String username, String otp) {
     Session session = HibernateUtil.getSessionFactory().openSession();
     Transaction tx = null;

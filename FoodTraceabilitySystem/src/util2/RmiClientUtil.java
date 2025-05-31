@@ -2,6 +2,7 @@ package util2;
 import java.rmi.Naming;
 import service.ProductInterface;
 import service.ProductStatusLogInterface;
+import service.ProductUserLogInterface; // Added import
 import service.UserInterface;
 
 public class RmiClientUtil {
@@ -22,5 +23,10 @@ public class RmiClientUtil {
     public static ProductStatusLogInterface getProductStatusLogService() throws Exception {
         // Service is bound as "productstatus"
         return (ProductStatusLogInterface) Naming.lookup(SERVER_URL_PREFIX + "productstatus"); 
-    }       
+    }
+
+    public static ProductUserLogInterface getProductUserLogService() throws Exception {
+        // Service is bound as "productUserLogService"
+        return (ProductUserLogInterface) Naming.lookup(SERVER_URL_PREFIX + "productUserLogService");
+    }
 }

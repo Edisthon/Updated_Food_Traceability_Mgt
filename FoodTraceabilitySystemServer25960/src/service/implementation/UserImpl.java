@@ -5,37 +5,28 @@
  */
 package service.implementation;
 
-import dao.HibernateUtil;
 import dao.UserDao;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Random;
+// Removed HashMap, Map, Properties, Random, javax.mail related imports implicitly by removing their usage
 import model.User;
-import org.hibernate.Query;
-import org.hibernate.Session;
+// Removed org.hibernate.Query and org.hibernate.Session as they are not directly used in UserImpl anymore (UserDao handles them)
+// Removed dao.HibernateUtil as it's not directly used here.
 import service.UserInterface;
 import util.OtpUtil;
 
 
 public class UserImpl extends UnicastRemoteObject implements UserInterface{
 
-     private Map<String, String> otpStore = new HashMap<>(); // username -> otp
-     private Map<String, String> userEmails = new HashMap<>(); // dummy userEmail DB
-    
+    // Removed otpStore and userEmails HashMaps
     
     public  UserImpl() throws RemoteException{
          super();
-        // Dummy data
-        userEmails.put("admin", "admin@example.com");
-        userEmails.put("testuser", "test@example.com");
-
+        // Removed dummy data initialization for userEmails
     }
-    UserDao dao= new UserDao();  
+    UserDao dao= new UserDao();  // UserDao instance is kept
 
     @Override
     public String registerUser(User users) throws RemoteException {
@@ -63,81 +54,112 @@ public class UserImpl extends UnicastRemoteObject implements UserInterface{
     }
 
     @Override
-    public User loginUser(String username, String password) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public boolean verifyOtp(String username, String otp) throws RemoteException {
-
-        Session session = HibernateUtil.getSessionFactory().openSession();
-    try {
-        Query query = session.createQuery("FROM User WHERE username = :username");
-        query.setParameter("username", username);
-        User user = (User) query.uniqueResult();
-
-        if (user == null) return false;
-
-        // Check if OTP matches and is not expired (optional)
-        String storedOtp = user.getOtp();
-        Date generatedTime = user.getOtpGeneratedTime();
-
-        long currentTime = System.currentTimeMillis();
-        long otpTime = generatedTime.getTime();
-        long diffMinutes = (currentTime - otpTime) / (60 * 1000);
-
-      if (storedOtp != null && storedOtp.equals(otp) && diffMinutes <= 5) {
-    return true;
-}
-    } finally {
-        session.close();
-    }
-    return false;
-    }
-
-    @Override
-    public String requestOtp(String username) throws RemoteException {
-    if (!userEmails.containsKey(username)) {
-            return "Username not found!";
+    public User loginUser(String email, String otp) throws RemoteException { // Signature changed
+        if (email == null || email.trim().isEmpty() || otp == null || otp.trim().isEmpty()) {
+            return null;
         }
-        String otp = String.valueOf(new Random().nextInt(900000) + 100000); // 6-digit
-        otpStore.put(username, otp);
+        User user = dao.findByEmail(email);
+        if (user == null) {
+            return null; // User not found
+        }
 
-        String recipient = userEmails.get(username);
-        sendEmail(recipient, otp);
+        String storedOtp = user.getOtp();
+        Date otpGeneratedTime = user.getOtpGeneratedTime();
 
-        return "OTP generated and sent to registered email.";
-    }
-    private void sendEmail(String to, String otp) {
-  
-            String from = "your-email@gmail.com";
-    String host = "smtp.gmail.com";
+        if (storedOtp == null || otpGeneratedTime == null) {
+            return null; // No OTP was generated for this user
+        }
 
-    Properties properties = System.getProperties();
-    properties.put("mail.smtp.host", host);
-    properties.put("mail.smtp.port", "587");
-    properties.put("mail.smtp.auth", "true");
-    properties.put("mail.smtp.starttls.enable", "true");
+        if (storedOtp.equals(otp)) {
+            long currentTime = System.currentTimeMillis();
+            long otpTimeMillis = otpGeneratedTime.getTime();
+            long diffMinutes = (currentTime - otpTimeMillis) / (60 * 1000);
 
-    // Use javax.mail.Session for email sending
-    javax.mail.Session emailSession = javax.mail.Session.getInstance(properties,
-        new javax.mail.Authenticator() {
-            protected javax.mail.PasswordAuthentication getPasswordAuthentication() {
-                return new javax.mail.PasswordAuthentication("your-email@gmail.com", "your-app-password");
+            if (diffMinutes <= 10) { // OTP valid for 10 minutes
+                // OTP is valid, clear it to prevent reuse
+                user.setOtp(null);
+                user.setOtpGeneratedTime(null);
+                try {
+                    dao.updateUser(user);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    // Log this error, but proceed with login as OTP was verified.
+                }
+                return user; // Login successful
+            } else {
+                // OTP Expired
+                 user.setOtp(null);
+                 user.setOtpGeneratedTime(null);
+                 try { dao.updateUser(user); } catch (Exception e) { e.printStackTrace(); }
+                return null;
             }
-        });
-
-    try {
-        javax.mail.internet.MimeMessage message = new javax.mail.internet.MimeMessage(emailSession);
-        message.setFrom(new javax.mail.internet.InternetAddress(from));
-        message.addRecipient(javax.mail.Message.RecipientType.TO, new javax.mail.internet.InternetAddress(to));
-        message.setSubject("Your OTP Code");
-        message.setText("Your OTP code is: " + otp);
-
-        javax.mail.Transport.send(message);
-        System.out.println("Sent message successfully.");
-    } catch (javax.mail.MessagingException mex) {
-        mex.printStackTrace();
+        } else {
+            return null; // OTP mismatch
+        }
     }
+
+    @Override
+    public boolean verifyOtp(String email, String otp) throws RemoteException { // Signature changed
+         if (email == null || email.trim().isEmpty() || otp == null || otp.trim().isEmpty()) {
+            return false;
+        }
+        User user = dao.findByEmail(email);
+        if (user == null) {
+            return false; // User not found
+        }
+
+        String storedOtp = user.getOtp();
+        Date otpGeneratedTime = user.getOtpGeneratedTime();
+
+        if (storedOtp == null || otpGeneratedTime == null) {
+            return false; // No OTP was generated
+        }
+
+        if (storedOtp.equals(otp)) {
+            long currentTime = System.currentTimeMillis();
+            long otpTimeMillis = otpGeneratedTime.getTime();
+            long diffMinutes = (currentTime - otpTimeMillis) / (60 * 1000);
+
+            return diffMinutes <= 10; // Valid if not expired (10 min window)
+        }
+        return false; // OTP mismatch
+    }
+
+    @Override
+    public String requestOtpByEmail(String email) throws RemoteException { // Method renamed and logic changed
+        if (email == null || email.trim().isEmpty()) {
+            return "Email cannot be empty.";
+        }
+        // Consider adding more robust email format validation here if needed.
+
+        User user = dao.findByEmail(email);
+        if (user == null) {
+            return "No user found with this email address.";
+        }
+
+        String otp = OtpUtil.generateOtp();
+        user.setOtp(otp);
+        user.setOtpGeneratedTime(new Date()); // Current time
+
+        try {
+            String updateResult = dao.updateUser(user);
+            if (updateResult != null && updateResult.toLowerCase().contains("success")) {
+                sendEmail(user.getEmail(), otp); // This will now print to console
+                return "OTP has been generated and sent (simulated).";
+            } else {
+                return "Failed to store OTP. DB issue: " + (updateResult == null ? "Unknown error" : updateResult);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RemoteException("Error processing OTP request: " + e.getMessage(), e);
+        }
+    }
+
+    // sendEmail method simplified for simulation
+    private void sendEmail(String to, String otp) {
+        System.out.println("---- OTP SIMULATION ----");
+        System.out.println("To: " + to);
+        System.out.println("OTP: " + otp);
+        System.out.println("------------------------");
     }
 }
